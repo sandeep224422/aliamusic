@@ -1,7 +1,7 @@
 from pyrogram import Client, enums, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, ChatPermissions, Message
-from IstkharMus import app
-from IstkharMusic.misc import SUDOERS
+from VenomMusic import app
+from VenomMusic.misc import SUDOERS
 import asyncio
 from pyrogram import Client, filters, enums
 from pyrogram.types import Message
@@ -55,3 +55,4 @@ async def play_logs(message, streamtype):
             except:
                 pass
         return
+
