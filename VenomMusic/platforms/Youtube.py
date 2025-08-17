@@ -18,6 +18,8 @@ import aiohttp
 import config
 from config import API_URL, API_KEY
 
+# New API endpoint
+NEW_API_URL = "https://apikeyy-zeta.vercel.app/api"
 
 def cookie_txt_file():
     cookie_dir = f"{os.getcwd()}/cookies"
@@ -26,6 +28,36 @@ def cookie_txt_file():
     cookie_file = os.path.join(cookie_dir, random.choice(cookies_files))
     return cookie_file
 
+async def search_song_api(query: str):
+    """Search for a song using the new API and return the first result"""
+    try:
+        search_url = f"{NEW_API_URL}/search?q={query}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(search_url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data and len(data) > 0:
+                        # Return the first (top) result
+                        return data[0]
+        return None
+    except Exception as e:
+        print(f"Error searching with new API: {e}")
+        return None
+
+async def download_song_new_api(video_id: str):
+    """Download song using the new API"""
+    try:
+        download_url = f"{NEW_API_URL}/download/{video_id}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(download_url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get("status") == "success":
+                        return data.get("url")
+        return None
+    except Exception as e:
+        print(f"Error downloading with new API: {e}")
+        return None
 
 async def download_song(link: str):
     video_id = link.split('v=')[-1].split('&')[0]
@@ -37,6 +69,29 @@ async def download_song(link: str):
             #print(f"File already exists: {file_path}")
             return file_path
 
+    # Try new API first
+    try:
+        download_url = await download_song_new_api(video_id)
+        if download_url:
+            # Download the file
+            async with aiohttp.ClientSession() as session:
+                async with session.get(download_url) as file_response:
+                    if file_response.status == 200:
+                        file_name = f"{video_id}.mp3"
+                        file_path = os.path.join(download_folder, file_name)
+                        os.makedirs(download_folder, exist_ok=True)
+                        
+                        with open(file_path, 'wb') as f:
+                            while True:
+                                chunk = await file_response.content.read(8192)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                        return file_path
+    except Exception as e:
+        print(f"New API failed, falling back to original API: {e}")
+
+    # Fallback to original API
     song_url = f"{API_URL}/song/{video_id}?api={API_KEY}"
     async with aiohttp.ClientSession() as session:
         while True:
@@ -182,6 +237,40 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
+        
+        # Try to get details using the new API first
+        try:
+            # Extract video ID from link
+            if "youtube.com/watch?v=" in link:
+                video_id = link.split("v=")[-1].split("&")[0]
+            elif "youtu.be/" in link:
+                video_id = link.split("youtu.be/")[-1].split("?")[0]
+            else:
+                video_id = link
+                
+            # Try to get info from new API
+            info_url = f"{NEW_API_URL}/info/{video_id}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(info_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("status") == "success":
+                            info = data.get("data", {})
+                            title = info.get("title", "")
+                            duration_min = info.get("duration", "0:00")
+                            thumbnail = info.get("thumbnail", "")
+                            vidid = video_id
+                            
+                            if str(duration_min) == "None":
+                                duration_sec = 0
+                            else:
+                                duration_sec = int(time_to_seconds(duration_min))
+                            
+                            return title, duration_min, duration_sec, thumbnail, vidid
+        except Exception as e:
+            print(f"New API failed for details, falling back to search: {e}")
+        
+        # Fallback to original search method
         results = VideosSearch(link, limit=1)
         for result in (await results.next())["result"]:
             title = result["title"]
@@ -199,6 +288,27 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
+        
+        # Try new API first
+        try:
+            if "youtube.com/watch?v=" in link:
+                video_id = link.split("v=")[-1].split("&")[0]
+            elif "youtu.be/" in link:
+                video_id = link.split("youtu.be/")[-1].split("?")[0]
+            else:
+                video_id = link
+                
+            info_url = f"{NEW_API_URL}/info/{video_id}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(info_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("status") == "success":
+                            return data.get("data", {}).get("title", "")
+        except Exception as e:
+            print(f"New API failed for title, falling back to search: {e}")
+        
+        # Fallback to original method
         results = VideosSearch(link, limit=1)
         for result in (await results.next())["result"]:
             title = result["title"]
@@ -209,6 +319,27 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
+        
+        # Try new API first
+        try:
+            if "youtube.com/watch?v=" in link:
+                video_id = link.split("v=")[-1].split("&")[0]
+            elif "youtu.be/" in link:
+                video_id = link.split("youtu.be/")[-1].split("?")[0]
+            else:
+                video_id = link
+                
+            info_url = f"{NEW_API_URL}/info/{video_id}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(info_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("status") == "success":
+                            return data.get("data", {}).get("duration", "0:00")
+        except Exception as e:
+            print(f"New API failed for duration, falling back to search: {e}")
+        
+        # Fallback to original method
         results = VideosSearch(link, limit=1)
         for result in (await results.next())["result"]:
             duration = result["duration"]
@@ -219,6 +350,27 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
+        
+        # Try new API first
+        try:
+            if "youtube.com/watch?v=" in link:
+                video_id = link.split("v=")[-1].split("&")[0]
+            elif "youtu.be/" in link:
+                video_id = link.split("youtu.be/")[-1].split("?")[0]
+            else:
+                video_id = link
+                
+            info_url = f"{NEW_API_URL}/info/{video_id}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(info_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("status") == "success":
+                            return data.get("data", {}).get("thumbnail", "")
+        except Exception as e:
+            print(f"New API failed for thumbnail, falling back to search: {e}")
+        
+        # Fallback to original method
         results = VideosSearch(link, limit=1)
         for result in (await results.next())["result"]:
             thumbnail = result["thumbnails"][0]["url"].split("?")[0]
@@ -229,6 +381,27 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
+        
+        # Try new API first
+        try:
+            if "youtube.com/watch?v=" in link:
+                video_id = link.split("v=")[-1].split("&")[0]
+            elif "youtu.be/" in link:
+                video_id = link.split("youtu.be/")[-1].split("?")[0]
+            else:
+                video_id = link
+                
+            stream_url = f"{NEW_API_URL}/stream/{video_id}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(stream_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("status") == "success":
+                            return 1, data.get("url", "")
+        except Exception as e:
+            print(f"New API failed for video stream, falling back to yt-dlp: {e}")
+        
+        # Fallback to yt-dlp
         proc = await asyncio.create_subprocess_exec(
             "yt-dlp",
             "--cookies",cookie_txt_file(),
@@ -267,6 +440,40 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
+        
+        # Try new API first
+        try:
+            if "youtube.com/watch?v=" in link:
+                video_id = link.split("v=")[-1].split("&")[0]
+            elif "youtu.be/" in link:
+                video_id = link.split("youtu.be/")[-1].split("?")[0]
+            else:
+                video_id = link
+                
+            info_url = f"{NEW_API_URL}/info/{video_id}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(info_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get("status") == "success":
+                            info = data.get("data", {})
+                            title = info.get("title", "")
+                            duration_min = info.get("duration", "0:00")
+                            thumbnail = info.get("thumbnail", "")
+                            yturl = f"https://www.youtube.com/watch?v={video_id}"
+                            
+                            track_details = {
+                                "title": title,
+                                "link": yturl,
+                                "vidid": video_id,
+                                "duration_min": duration_min,
+                                "thumb": thumbnail,
+                            }
+                            return track_details, video_id
+        except Exception as e:
+            print(f"New API failed for track info, falling back to search: {e}")
+        
+        # Fallback to original method
         results = VideosSearch(link, limit=1)
         for result in (await results.next())["result"]:
             title = result["title"]
@@ -329,6 +536,25 @@ class YouTubeAPI:
             link = self.base + link
         if "&" in link:
             link = link.split("&")[0]
+        
+        # Try new API first for search results
+        try:
+            search_url = f"{NEW_API_URL}/search?q={link}&limit=10"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(search_url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data and len(data) > query_type:
+                            result = data[query_type]
+                            title = result.get("title", "")
+                            duration_min = result.get("duration", "0:00")
+                            thumbnail = result.get("thumbnail", "")
+                            vidid = result.get("video_id", "")
+                            return title, duration_min, thumbnail, vidid
+        except Exception as e:
+            print(f"New API failed for slider, falling back to search: {e}")
+        
+        # Fallback to original method
         a = VideosSearch(link, limit=10)
         result = (await a.next()).get("result")
         title = result[query_type]["title"]
@@ -427,17 +653,48 @@ class YouTubeAPI:
             x.download([link])
 
         if songvideo:
-            await download_song(link)
-            fpath = f"downloads/{link}.mp3"
-            return fpath
+            downloaded_file = await download_song(link)
+            if downloaded_file:
+                return downloaded_file
+            # Fallback to yt-dlp if API fails
+            return await loop.run_in_executor(None, song_video_dl)
         elif songaudio:
-            await download_song(link)
-            fpath = f"downloads/{link}.mp3"
-            return fpath
+            downloaded_file = await download_song(link)
+            if downloaded_file:
+                return downloaded_file
+            # Fallback to yt-dlp if API fails
+            return await loop.run_in_executor(None, song_audio_dl)
         elif video:
             if await is_on_off(1):
                 direct = True
                 downloaded_file = await download_song(link)
+                if not downloaded_file:
+                    # Fallback to yt-dlp if API fails
+                    proc = await asyncio.create_subprocess_exec(
+                        "yt-dlp",
+                        "--cookies",cookie_txt_file(),
+                        "-g",
+                        "-f",
+                        "best[height<=?720][width<=?1280]",
+                        f"{link}",
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                    )
+                    stdout, stderr = await proc.communicate()
+                    if stdout:
+                        downloaded_file = stdout.decode().split("\n")[0]
+                        direct = False
+                    else:
+                       file_size = await check_file_size(link)
+                       if not file_size:
+                         print("None file Size")
+                         return
+                       total_size_mb = file_size / (1024 * 1024)
+                       if total_size_mb > 250:
+                         print(f"File size {total_size_mb:.2f} MB exceeds the 100MB limit.")
+                         return None
+                       direct = True
+                       downloaded_file = await loop.run_in_executor(None, video_dl)
             else:
                 proc = await asyncio.create_subprocess_exec(
                     "yt-dlp",
@@ -467,4 +724,7 @@ class YouTubeAPI:
         else:
             direct = True
             downloaded_file = await download_song(link)
+            if not downloaded_file:
+                # Fallback to yt-dlp if API fails
+                downloaded_file = await loop.run_in_executor(None, audio_dl)
         return downloaded_file, direct

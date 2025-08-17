@@ -1,4 +1,4 @@
-<h1 align="center">🎵 Venom Music🎵</h1>
+<h1 align="center">🎵 alia Music🎵</h1>
 
 <p align="center">
   <img src="https://files.catbox.moe/jo0gi9.jpg" alt="Venom Music Logo" width="600" height="150">
@@ -19,7 +19,7 @@
   <a href="https://venomhost.in/">
     <img src="https://img.shields.io/badge/Cheapest%20Web%20Hosting-1A237E?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cheapest Web Hosting">
   </a>
-  <a href="https://t.me/venom_pratap">
+  <a href="https://t.me/Crush_hu_tera">
     <img src="https://img.shields.io/badge/Contact%20Owner-2E64FE?style=for-the-badge&logo=telegram&logoColor=white" alt="Contact Owner">
   </a>
 </p>
@@ -54,7 +54,7 @@
 <h2 align="center">🚀 One-Click Deploy to Heroku</h2>
 
 <p align="center">
-  <a href="https://dashboard.heroku.com/new?template=https://github.com/Badnam019/VenomMusic">
+  <a href="https://dashboard.heroku.com/new?template=https://github.com/Suraj08832/aliamusic">
     <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" />
   </a>
 </p>
