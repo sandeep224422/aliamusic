@@ -19,7 +19,7 @@ import config
 from config import API_URL, API_KEY
 
 # New API endpoint
-NEW_API_URL = "https://apikeyy-zeta.vercel.app/api"
+NEW_API_URL = "https://apikeyy-zeta.vercel.app/api/"
 
 def cookie_txt_file():
     cookie_dir = f"{os.getcwd()}/cookies"
@@ -728,3 +728,4 @@ class YouTubeAPI:
                 # Fallback to yt-dlp if API fails
                 downloaded_file = await loop.run_in_executor(None, audio_dl)
         return downloaded_file, direct
+
